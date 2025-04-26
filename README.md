@@ -20,7 +20,7 @@ The build produces `GameEngine2.nro`, `GameEngine2.elf`, and supporting files in
 
 
 
-## Acknowledgements ❤️
+## Acknowledgements
 * **devkitPro & libnx teams** – for the Switch SDK, pacman repositories, and the invaluable *switch‑examples* sample code.
 * **switchbrew community** – documentation and continual reverse‑engineering efforts.
 * **Homebrew testers & contributors** – pull requests, feedback, and bug reports.
