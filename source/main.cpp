@@ -1,16 +1,16 @@
 #include "core/Scene.hpp"
+#include "graphics/Renderer.hpp"
 #include "input/InputSystem.hpp"
 #include <switch.h>
 
-int main(int argc, char** argv)
+int main(int, char**)
 {
-    consoleInit(nullptr);
-
-    Scene scene;
+    gfxInit();
     InputSystem input;
+    Scene scene;
 
-    u64 prev = armGetSystemTick();
     const double freq = static_cast<double>(armGetSystemTickFreq());
+    u64 prev = armGetSystemTick();
 
     while (appletMainLoop()) {
         u64 now = armGetSystemTick();
@@ -18,14 +18,15 @@ int main(int argc, char** argv)
         prev = now;
 
         input.update();
-
         if (input.keysDown() & HidNpadButton_Plus)
             break;
 
         scene.Update(dt);
-        consoleUpdate(nullptr);
-    }
 
-    consoleExit(nullptr);
+        gfxBegin();
+        /* draw scene here */
+        gfxEnd();
+    }
+    gfxExit();
     return 0;
 }

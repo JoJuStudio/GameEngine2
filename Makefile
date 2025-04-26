@@ -39,7 +39,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES 	:= 	source source/core source/input
+SOURCES 	:= 	source source/core source/input source/graphics
 DATA		:=	data
 INCLUDES 	:= 	source
 ROMFS		:=	assets
@@ -54,13 +54,12 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS)  -fno-exceptions
-CXXFLAGS 	+= -frtti
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lglad -lEGL -lglapi -lnx -lBulletDynamics -lBulletCollision -lLinearMath
+LIBS	:= 	-lglad -lEGL -lglapi -ldrm_nouveau -lnx -lBulletDynamics -lBulletCollision -lLinearMath
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
