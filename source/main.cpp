@@ -1,3 +1,4 @@
+#include "core/Logging.hpp"
 #include "core/Scene.hpp"
 #include "graphics/Renderer.hpp"
 #include "input/InputSystem.hpp"
@@ -8,6 +9,7 @@ int main(int, char**)
     gfxInit();
     InputSystem input;
     Scene scene;
+    initLogging();
 
     const double freq = static_cast<double>(armGetSystemTickFreq());
     u64 prev = armGetSystemTick();
@@ -27,6 +29,8 @@ int main(int, char**)
         /* draw scene here */
         gfxEnd();
     }
+
+    LoggingExit();
     gfxExit();
     return 0;
 }
