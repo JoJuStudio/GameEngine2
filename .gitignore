@@ -1,0 +1,55 @@
+###############################################################################
+# Nintendo Switch homebrew (devkitPro)
+###############################################################################
+
+# Build directory created by the stock Makefile
+build/
+
+# Object & dependency files
+*.o
+*.d
+*.lst
+*.map
+
+# Binaries / containers produced by linkle, elf2nro, elf2nso, etc.
+*.elf
+*.nro
+*.nacp
+*.nso
+*.npdm
+*.pfs0
+*.nsp
+*.romfs
+*.dksh            # compiled GPU shader blobs
+*.bin             # generic raw binaries
+*.bz2             # compressed shader caches
+
+###############################################################################
+# Editors & IDEs
+###############################################################################
+
+# – Kate –
+*~                 # Backup-on-save files                 :contentReference[oaicite:0]{index=0}
+.*.kate-swp        # Crash-recovery swap files            :contentReference[oaicite:1]{index=1}
+.kateproject       # Project-plugin metadata (optional)
+
+# – VS Code / JetBrains –
+.vscode/
+.idea/
+*.iml
+
+# – General –
+compile_commands.json
+.tags
+.DS_Store
+Thumbs.db
+
+###############################################################################
+# Misc. archives / logs
+###############################################################################
+*.zip
+*.7z
+*.tar
+*.gz
+*.xz
+*.log

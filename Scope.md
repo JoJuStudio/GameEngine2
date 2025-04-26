@@ -1,4 +1,4 @@
-# 3D Game Engine – Project Scope Document
+GPLv3# 3D Game Engine – Project Scope Document
 
 ## 1  Project Title
 **Cross‑Platform Homebrew 3D Game Engine** (Nintendo Switch & Linux)
@@ -51,7 +51,7 @@ The project will deliver a lightweight, component‑based 3‑D game engine that
 ## 7  Assumptions
 * End‑users possess a legally obtained Nintendo Switch capable of running homebrew (.nro)
 * devkitPro toolchain is installed on contributor machines
-* Project will remain open‑source under the MIT License
+* Project will remain open‑source under the GPLv3 License
 * Target frame budget on Switch: CPU ≤ 10 ms, GPU ≤ 16 ms (60 fps base)
 
 ---

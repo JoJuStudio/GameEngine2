@@ -39,10 +39,10 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES 	:= 	source/core source/render source
+SOURCES 	:= 	source
 DATA		:=	data
-INCLUDES 	:= 	include source
-ROMFS		:=	romfs
+INCLUDES 	:= 	source
+ROMFS		:=	assets
 
 #---------------------------------------------------------------------------------
 # options for code generation
