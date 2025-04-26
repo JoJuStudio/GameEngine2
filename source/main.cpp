@@ -1,32 +1,31 @@
 #include "core/Scene.hpp"
-#include <switch/services/hid.h>
 #include "input/InputSystem.hpp"
 #include <switch.h>
 
 int main(int argc, char** argv)
 {
     consoleInit(nullptr);
+
     Scene scene;
     InputSystem input;
 
-    u64 start = armGetSystemTick();
+    u64 prev = armGetSystemTick();
+    const double freq = static_cast<double>(armGetSystemTickFreq());
 
     while (appletMainLoop()) {
-        // Δt in seconds
         u64 now = armGetSystemTick();
-        float dt = (now - start) / static_cast<float>(armGetSystemTickFreq());
-        start = now;
+        float dt = static_cast<float>((now - prev) / freq);
+        prev = now;
 
-        input.Pump();
+        input.update();
 
-        if (input.WasJustPressed(KEY_PLUS))
-            break; // exit
+        if (input.keysDown() & HidNpadButton_Plus)
+            break;
 
         scene.Update(dt);
-
-        consoleUpdate(NULL);
+        consoleUpdate(nullptr);
     }
 
-    consoleExit(NULL);
+    consoleExit(nullptr);
     return 0;
 }

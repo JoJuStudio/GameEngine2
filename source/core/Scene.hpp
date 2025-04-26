@@ -8,8 +8,7 @@ public:
     Scene();
     ~Scene();
 
-    GameObject& Root();
-
+    GameObject& root();
     void Update(float dt);
 
 private:

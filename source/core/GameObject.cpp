@@ -1,53 +1,34 @@
 #include "GameObject.hpp"
 #include "Transform.hpp"
-#include <algorithm>
 
 GameObject::GameObject(std::string_view name)
     : m_name(name)
 {
-    // Every GO gets a Transform
-    AddComponent<Transform>(this);
+    addComponent<Transform>(this);
 }
 
 GameObject::~GameObject() = default;
 
-GameObject& GameObject::CreateChild(std::string_view name)
+GameObject& GameObject::createChild(std::string_view name)
 {
-    auto& child = m_children.emplace_back(std::make_unique<GameObject>(name));
-    child->m_parent = this;
-    return *child;
+    auto& uptr = m_children.emplace_back(std::make_unique<GameObject>(name));
+    uptr->m_parent = this;
+    return *uptr;
 }
 
-void GameObject::Update(float dt)
+void GameObject::update(float dt)
 {
-    // Update components
     for (auto& c : m_components)
-        c->Update(dt);
-
-    // Update children
+        c->update(dt);
     for (auto& ch : m_children)
-        ch->Update(dt);
+        ch->update(dt);
 }
 
-// --- templates ---
-template <class T, class... Args>
-T& GameObject::AddComponent(Args&&... args)
+Transform& GameObject::transform()
 {
-    auto& ptr = m_components.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
-    return static_cast<T&>(*ptr);
+    return *getComponent<Transform>();
 }
 
-template <class T>
-T* GameObject::GetComponent() const
-{
-    for (auto& c : m_components)
-        if (auto cast = dynamic_cast<T*>(c.get()))
-            return cast;
-    return nullptr;
-}
-
-// Explicit instantiations to avoid link errors
-template Transform& GameObject::AddComponent<Transform, GameObject*>(GameObject*&&);
-template Transform* GameObject::GetComponent<Transform>() const;
-
-Transform& GameObject::TransformComponent() { return *GetComponent<Transform>(); }
+/* explicit instantiations so linker keeps symbols */
+template Transform& GameObject::addComponent<Transform, GameObject*>(GameObject*&&);
+template Transform* GameObject::getComponent<Transform>() const;

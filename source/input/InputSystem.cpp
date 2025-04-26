@@ -1,22 +1,25 @@
 #include "InputSystem.hpp"
 
-void InputSystem::Pump()
+InputSystem::InputSystem()
 {
-    hidScanInput();
-    m_down = hidKeysDown(m_id);
-    m_up = hidKeysUp(m_id);
-    m_held = hidKeysHeld(m_id);
-
-    HidAnalogStickState l = hidAnalogStickRead(m_id, CONTROLLER_ANALOG_STICK_LEFT);
-    HidAnalogStickState r = hidAnalogStickRead(m_id, CONTROLLER_ANALOG_STICK_RIGHT);
-
-    constexpr float inv = 1.0f / 32767.0f;
-    m_lx = l.x * inv;
-    m_ly = l.y * inv;
-    m_rx = r.x * inv;
-    m_ry = r.y * inv;
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    padInitializeDefault(&m_pad);
 }
 
-bool InputSystem::IsPressed(u64 key) const { return m_held & key; }
-bool InputSystem::WasJustPressed(u64 key) const { return m_down & key; }
-bool InputSystem::WasJustReleased(u64 key) const { return m_up & key; }
+void InputSystem::update()
+{
+    padUpdate(&m_pad);
+
+    m_down = padGetButtonsDown(&m_pad);
+    m_up = padGetButtonsUp(&m_pad);
+    m_held = padGetButtons(&m_pad);
+
+    HidAnalogStickState l = padGetStickPos(&m_pad, 0);
+    HidAnalogStickState r = padGetStickPos(&m_pad, 1);
+
+    constexpr float inv = 1.0f / 32767.0f;
+    m_leftX = l.x * inv;
+    m_leftY = l.y * inv;
+    m_rightX = r.x * inv;
+    m_rightY = r.y * inv;
+}

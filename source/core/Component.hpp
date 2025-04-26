@@ -1,9 +1,25 @@
 #pragma once
-#include <cstdint>
+#include <cstddef>
 
 class GameObject;
 
-/** Base class for all attachable behaviours. */
+/* ------------- lightweight type-ID system (no RTTI) ------------------ */
+using ComponentTypeID = std::size_t;
+
+inline ComponentTypeID newComponentTypeID() noexcept
+{
+    static ComponentTypeID last = 0;
+    return last++;
+}
+
+template <class T>
+inline ComponentTypeID componentTypeID() noexcept
+{
+    static ComponentTypeID id = newComponentTypeID();
+    return id;
+}
+
+/* --------------------------- base class -------------------------------- */
 class Component {
 public:
     explicit Component(GameObject* owner)
@@ -12,11 +28,11 @@ public:
     }
     virtual ~Component() = default;
 
-    /** Per-frame logic. */
-    virtual void Update(float dt) { }
+    virtual ComponentTypeID type() const = 0;
+    virtual void update(float /*dt*/) { } // optional per-frame hook
 
 protected:
-    GameObject* Owner() const { return m_owner; }
+    GameObject* owner() const { return m_owner; }
 
 private:
     GameObject* m_owner;

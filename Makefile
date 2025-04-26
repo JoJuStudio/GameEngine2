@@ -39,7 +39,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES 	:= 	source
+SOURCES 	:= 	source source/core source/input
 DATA		:=	data
 INCLUDES 	:= 	source
 ROMFS		:=	assets
@@ -54,7 +54,8 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:= $(CFLAGS)  -fno-exceptions
+CXXFLAGS 	+= -frtti
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
@@ -68,7 +69,7 @@ LIBS	:= -lglad -lEGL -lglapi -lnx -lBulletDynamics -lBulletCollision -lLinearMat
 LIBDIRS	:= $(PORTLIBS) $(LIBNX)
 
 
-#---------------------------------------------------------------------------------
+#---------------- -----------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
 # rules for different file extensions
 #---------------------------------------------------------------------------------

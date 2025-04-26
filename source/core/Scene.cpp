@@ -7,6 +7,6 @@ Scene::Scene()
 }
 Scene::~Scene() = default;
 
-GameObject& Scene::Root() { return *m_root; }
+GameObject& Scene::root() { return *m_root; }
 
-void Scene::Update(float dt) { m_root->Update(dt); }
+void Scene::Update(float dt) { m_root->update(dt); }

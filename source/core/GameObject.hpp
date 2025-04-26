@@ -1,7 +1,8 @@
 #pragma once
 #include "Component.hpp"
 #include <memory>
-#include <string_view>
+#include <string>
+#include <utility>
 #include <vector>
 
 class Transform;
@@ -11,26 +12,40 @@ public:
     explicit GameObject(std::string_view name = "GameObject");
     ~GameObject();
 
-    // --- hierarchy ---
-    GameObject& CreateChild(std::string_view name = "Child");
-    GameObject* Parent() const { return m_parent; }
-    std::span<std::unique_ptr<GameObject>> Children() { return m_children; }
+    GameObject& createChild(std::string_view name = "Child");
+    GameObject* parent() const { return m_parent; }
+    std::vector<std::unique_ptr<GameObject>>& children() { return m_children; }
 
-    // --- components ---
     template <class T, class... Args>
-    T& AddComponent(Args&&... args);
+    T& addComponent(Args&&... args);
     template <class T>
-    T* GetComponent() const;
+    T* getComponent() const;
+    Transform& transform();
 
-    // --- ticking ---
-    void Update(float dt);
-
-    Transform& TransformComponent(); // convenience accessor
+    void update(float dt);
 
 private:
     std::string m_name;
     GameObject* m_parent { nullptr };
-
     std::vector<std::unique_ptr<Component>> m_components;
     std::vector<std::unique_ptr<GameObject>> m_children;
 };
+
+/* -------- template implementations (header-only) --------------------- */
+template <class T, class... Args>
+T& GameObject::addComponent(Args&&... args)
+{
+    auto& uptr = m_components.emplace_back(
+        std::make_unique<T>(std::forward<Args>(args)...));
+    return static_cast<T&>(*uptr);
+}
+
+template <class T>
+T* GameObject::getComponent() const
+{
+    ComponentTypeID id = componentTypeID<T>();
+    for (auto& c : m_components)
+        if (c->type() == id)
+            return static_cast<T*>(c.get());
+    return nullptr;
+}
