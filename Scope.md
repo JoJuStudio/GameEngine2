@@ -100,12 +100,5 @@ _Total planned effort: 14 weeks (April → July 2025)_
 | Audio latency on SDL2 | Low | User experience | Pre‑mix common sounds; tune buffer sizes |
 | Scarce tester hardware | Medium | Missed regressions | Recruit community testers, set up nightly beta builds |
 
----
-## 13  Approval
-*Sign‑off indicates agreement that the scope, deliverables, and constraints are understood and accepted.*
-
-| Name | Position | Signature | Date |
-|------|----------|-----------|------|
-|  |  |  |  |
 
 
