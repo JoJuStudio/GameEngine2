@@ -1,24 +1,29 @@
-#include <stdio.h>
-#include <string.h>
-
+#include "core/Scene.hpp"
+#include <switch/services/hid.h>
+#include "input/InputSystem.hpp"
 #include <switch.h>
 
 int main(int argc, char** argv)
 {
-    consoleInit(NULL);
+    consoleInit(nullptr);
+    Scene scene;
+    InputSystem input;
 
-    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
-    PadState pad;
-    padInitializeDefault(&pad);
-
-    printf("Hello Nintendo Homebrew!");
+    u64 start = armGetSystemTick();
 
     while (appletMainLoop()) {
-        padUpdate(&pad);
-        u64 kDown = padGetButtonsDown(&pad);
+        // Δt in seconds
+        u64 now = armGetSystemTick();
+        float dt = (now - start) / static_cast<float>(armGetSystemTickFreq());
+        start = now;
 
-        if (kDown & HidNpadButton_Plus)
-            break;
+        input.Pump();
+
+        if (input.WasJustPressed(KEY_PLUS))
+            break; // exit
+
+        scene.Update(dt);
+
         consoleUpdate(NULL);
     }
 
