@@ -39,9 +39,9 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES 	:= 	source source/core source/input source/graphics
+SOURCES 	:= 	source source/core source/input source/graphics source/asset source/renderer/ extern/tinygltf/
 DATA		:=	data
-INCLUDES 	:= 	source
+INCLUDES 	:= 	source extern/tinygltf
 ROMFS		:=	assets
 
 #---------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= 	-lglad -lEGL -lglapi -ldrm_nouveau -lnx -lBulletDynamics -lBulletCollision -lLinearMath
+LIBS	:= 	-lglad -lEGL -lglapi -ldrm_nouveau -lnx -lBulletDynamics -lBulletCollision -lLinearMath -lz -lpng
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -83,9 +83,10 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+CFILES     	:= $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+CPPFILES   	:= $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp))) \
+		$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cc)))
+SFILES     	:= $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
