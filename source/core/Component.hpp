@@ -29,7 +29,8 @@ public:
     virtual ~Component() = default;
 
     virtual ComponentTypeID type() const = 0;
-    virtual void update(float /*dt*/) { } // optional per-frame hook
+    virtual void update(float /*dt*/) { }
+    virtual void draw() { } // <-- ADD THIS!!
 
 protected:
     GameObject* owner() const { return m_owner; }

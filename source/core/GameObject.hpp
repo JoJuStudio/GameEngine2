@@ -10,7 +10,7 @@ class Transform;
 class GameObject {
 public:
     explicit GameObject(std::string_view name = "GameObject");
-    ~GameObject();
+    virtual ~GameObject(); // Mark destructor virtual (important if subclassing)
 
     GameObject& createChild(std::string_view name = "Child");
     GameObject* parent() const { return m_parent; }
@@ -23,6 +23,11 @@ public:
     Transform& transform();
 
     void update(float dt);
+    void draw(); // <-- Add draw()
+
+protected:
+    virtual void OnUpdate(float dt); // <-- Add this
+    virtual void OnDraw(); // <-- And this
 
 private:
     std::string m_name;

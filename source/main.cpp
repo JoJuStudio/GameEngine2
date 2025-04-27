@@ -3,17 +3,29 @@
 #include <glad/glad.h>
 #include <switch.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "Player.hpp" // your movement/look component
 #include "asset/GltfLoader.hpp" // Asset::GltfLoader
 #include "core/Camera.hpp" // Camera component
-#include "core/GameObject.hpp" // full definition of GameObject
+#include "core/Component.hpp" // Component base class
+#include "core/GameObject.hpp" // GameObject
 #include "core/Logging.hpp" // initLogging(), LOG_*, LoggingExit()
-#include "core/Scene.hpp" // Scene, root()
-#include "graphics/Renderer.hpp" // gfxInit, gfxBegin/End, updateViewProj
+#include "core/Scene.hpp" // Scene, root(), Update(), Render()
+#include "core/Transform.hpp" // Transform
+#include "graphics/Renderer.hpp" // gfxInit/Exit, gfxBegin/End, updateViewProj
 #include "input/InputSystem.hpp" // InputSystem
 #include "renderer/Mesh.hpp" // Mesh::Draw()
 
-// A tiny Component that holds shared_ptr<Mesh> so it matches GltfLoader
+#include <memory>
+#include <string>
+#include <vector>
+
+//------------------------------------------------------------------------------
+// A tiny Component that just holds and draws all the meshes loaded from a glTF.
+//------------------------------------------------------------------------------
 struct GltfComponent : public Component {
     std::vector<std::shared_ptr<Mesh>> meshes;
 
@@ -21,73 +33,110 @@ struct GltfComponent : public Component {
         : Component(owner)
     {
         auto assetScene = Asset::GltfLoader::LoadFromFile(path);
-        meshes = assetScene.meshes; // copy the shared_ptrs
+        meshes = assetScene.meshes;
+
+        if (meshes.empty()) {
+            LOG_ERROR("GltfComponent: failed to load meshes from '%s'",
+                path.c_str());
+        } else {
+            LOG_INFO("GltfComponent: loaded %zu mesh(es) from '%s'",
+                meshes.size(), path.c_str());
+        }
     }
 
-    // your engine will call this during its render pass
-    void OnDraw() const override
+    ComponentTypeID type() const override
     {
-        for (auto& m : meshes)
-            m->Draw();
+        return componentTypeID<GltfComponent>();
+    }
+
+    void draw() override
+    {
+        // each frame, just draw all meshes (using whatever shader they baked in)
+        for (auto& mesh : meshes) {
+            mesh->Draw();
+        }
     }
 };
 
+//------------------------------------------------------------------------------
+// Entry point
+//------------------------------------------------------------------------------
 int main(int, char**)
 {
-    // — logging to console/file —
+    // — logging & on-screen console —
     initLogging();
-    consoleInit(NULL); // also route printf/LOG_* to the screen
 
-    // — mount ROMFS —
+    // — mount ROMFS & init GPU —
     romfsInit();
-
-    // — bring up the GPU —
     gfxInit();
 
-    // — load GL pointers & depth test —
+    // — load GL pointers & enable depth test —
     if (!gladLoadGL()) {
         LOG_ERROR("gladLoadGL failed");
     }
     glEnable(GL_DEPTH_TEST);
 
-    // — set up input + scene + player+camera —
+    // — set up input, scene, player+camera —
     InputSystem input;
     Scene scene;
 
     auto& playerCam = scene.root().createChild("PlayerCamera");
-    playerCam.transform().position = { 0, 0, 3 };
+    playerCam.transform().position = { 0.0f, 0.0f, 3.0f };
     playerCam.addComponent<Player>(&playerCam, &input);
     auto& cam = playerCam.addComponent<Camera>(
-        &playerCam, 78.f, 1280.f / 720.f, 0.1f, 100.f);
+        &playerCam,
+        /*fov=*/78.f,
+        /*aspect=*/1280.f / 720.f,
+        /*znear=*/0.1f,
+        /*zfar=*/100.f);
 
-    // — load & attach the girl model —
+    // — load & attach the girl model at world-origin —
     auto& girlObj = scene.root().createChild("Girl");
-    girlObj.transform().position = { 0, 0, 0 };
-    girlObj.addComponent<GltfComponent>(&girlObj, "romfs:/GLBs/girl.glb");
+    girlObj.transform().position = { 0.0f, 0.0f, 0.0f };
+    girlObj.addComponent<GltfComponent>(&girlObj,
+        "romfs:/GLBs/girl.glb");
 
-    // — main loop —
+    // — timing setup —
     const double freq = double(armGetSystemTickFreq());
     u64 prev = armGetSystemTick();
+
+    // — main loop —
     while (appletMainLoop()) {
+        // compute delta‐time
         u64 now = armGetSystemTick();
         float dt = float((now - prev) / freq);
         prev = now;
 
+        // poll input & exit if “+” pressed
         input.update();
         if (input.keysDown() & HidNpadButton_Plus)
             break;
 
+        // update scene graph
         scene.Update(dt);
+
+        // push camera matrices
         updateViewProj(cam.viewMatrix(), cam.projectionMatrix());
 
+        // start frame
         gfxBegin();
-        scene.Render(); // <-- replace with your engine’s actual render call
+
+        // clear to a nice sky‐blue
+        glClearColor(0.0f, 0.2f, 0.6f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, 1280, 720);
+
+        // draw everything
+        scene.Render();
+
+        // finish frame
         gfxEnd();
     }
 
-    // — tear down —
+    // — tear everything down —
     gfxExit();
     romfsExit();
     LoggingExit();
+
     return 0;
 }
