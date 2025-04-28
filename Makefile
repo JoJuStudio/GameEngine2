@@ -39,9 +39,9 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES 	:= 	source source/core source/input source/graphics source/asset source/renderer/ extern/tinygltf/
+SOURCES 	:=	source source/core source/input source/graphics source/asset source/renderer/ source/components
 DATA		:=	data
-INCLUDES 	:= 	source extern/tinygltf
+INCLUDES 	:=	external/tinygltf/ external/stb source
 ROMFS		:=	assets
 
 #---------------------------------------------------------------------------------
@@ -54,7 +54,8 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -Iexternal
+
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)

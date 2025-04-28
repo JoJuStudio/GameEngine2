@@ -1,37 +1,27 @@
 #pragma once
 
+#include "../renderer/Material.hpp"
+#include "../renderer/Mesh.hpp"
+#include "../renderer/Texture.hpp"
+#include "tiny_gltf.h"
 #include <memory>
 #include <string>
 #include <vector>
 
-// tinygltf header (unchanged .h)
-#include "tiny_gltf.h"
-
-// Engine types
-#include "../renderer/Material.hpp"
-#include "../renderer/Mesh.hpp"
-#include "../renderer/Texture.hpp"
-
-// Your switch logging macros: LOG_INFO, LOG_WARN, LOG_ERROR
-#include "../core/Logging.hpp"
-
 namespace Asset {
-
-struct GltfScene {
-    std::vector<std::shared_ptr<Mesh>> meshes;
-    std::vector<std::shared_ptr<Material>> materials;
-};
 
 class GltfLoader {
 public:
-    /// Load a .gltf or .glb file. Throws std::runtime_error on failure.
-    static GltfScene LoadFromFile(const std::string& filepath);
+    static std::vector<std::shared_ptr<Mesh>> LoadFromFile(const std::string& filepath);
 
 private:
-    static void LoadBuffers(const tinygltf::Model& model, GltfScene& scene);
-    static void LoadTextures(const tinygltf::Model& model, GltfScene& scene);
-    static void LoadMaterials(const tinygltf::Model& model, GltfScene& scene);
-    static void LoadMeshes(const tinygltf::Model& model, GltfScene& scene);
+    static void LoadBuffers(const tinygltf::Model& model);
+    static void LoadTextures(const tinygltf::Model& model);
+    static void LoadMaterials(const tinygltf::Model& model);
+    static void LoadMeshes(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& outMeshes);
+
+    static std::vector<std::shared_ptr<Texture>> s_textures;
+    static std::vector<std::shared_ptr<Material>> s_materials;
 };
 
 } // namespace Asset

@@ -1,0 +1,12 @@
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb
+[submodule "source/asset/extern/tinygltf"]
+	path = source/asset/extern/tinygltf
+	url = https://github.com/syoyo/tinygltf
+[submodule "extern/tinygltf"]
+	path = extern/tinygltf
+	url = https://github.com/syoyo/tinygltf
+[submodule "external/tinygltf"]
+	path = external/tinygltf
+	url = https://github.com/syoyo/tinygltf

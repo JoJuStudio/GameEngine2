@@ -1,11 +1,24 @@
-
 // source/asset/TinyGltf.cpp
-// ————————————————————————————————————————————————————
-// only this TU instantiates tinygltf’s implementation:
 
 #define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-// (optional) #define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 
 #include "tiny_gltf.h"
+#include <string>
+
+namespace tinygltf {
+
+// Dummy function: WriteImageData, because we disabled real saving.
+bool WriteImageData(const std::string*,
+    const std::string*,
+    const Image*,
+    bool,
+    const FsCallbacks*,
+    const URICallbacks*,
+    std::string*,
+    void*)
+{
+    return false;
+}
+
+} // namespace tinygltf

@@ -1,142 +1,163 @@
 // source/main.cpp
 
-#include <glad/glad.h>
-#include <switch.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include "Player.hpp" // your movement/look component
-#include "asset/GltfLoader.hpp" // Asset::GltfLoader
-#include "core/Camera.hpp" // Camera component
-#include "core/Component.hpp" // Component base class
-#include "core/GameObject.hpp" // GameObject
-#include "core/Logging.hpp" // initLogging(), LOG_*, LoggingExit()
-#include "core/Scene.hpp" // Scene, root(), Update(), Render()
-#include "core/Transform.hpp" // Transform
-#include "graphics/Renderer.hpp" // gfxInit/Exit, gfxBegin/End, updateViewProj
-#include "input/InputSystem.hpp" // InputSystem
-#include "renderer/Mesh.hpp" // Mesh::Draw()
-
+//======================================
+// Core systems
+//======================================
 #include <memory>
 #include <string>
 #include <vector>
 
-//------------------------------------------------------------------------------
-// A tiny Component that just holds and draws all the meshes loaded from a glTF.
-//------------------------------------------------------------------------------
-struct GltfComponent : public Component {
-    std::vector<std::shared_ptr<Mesh>> meshes;
+//======================================
+// Graphics APIs
+//======================================
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <switch.h>
 
-    GltfComponent(GameObject* owner, const std::string& path)
-        : Component(owner)
+//======================================
+// Engine components
+//======================================
+#include "Player.hpp"
+#include "components/GltfComponent.hpp"
+#include "core/Camera.hpp"
+#include "core/Component.hpp"
+#include "core/GameObject.hpp"
+#include "core/Logging.hpp"
+#include "core/Scene.hpp"
+#include "core/Transform.hpp"
+#include "graphics/Renderer.hpp"
+#include "input/InputSystem.hpp"
+#include "renderer/Mesh.hpp"
+
+class Engine {
+public:
+    static void Init()
     {
-        auto assetScene = Asset::GltfLoader::LoadFromFile(path);
-        meshes = assetScene.meshes;
+        initLogging();
+        romfsInit();
+        gfxInit();
 
-        if (meshes.empty()) {
-            LOG_ERROR("GltfComponent: failed to load meshes from '%s'",
-                path.c_str());
-        } else {
-            LOG_INFO("GltfComponent: loaded %zu mesh(es) from '%s'",
-                meshes.size(), path.c_str());
+        if (!gladLoadGL()) {
+            LOG_ERROR("Failed to initialize GLAD");
+            return;
         }
+
+        glEnable(GL_DEPTH_TEST);
+        LOG_INFO("Engine initialized successfully");
     }
 
-    ComponentTypeID type() const override
+    static void Shutdown()
     {
-        return componentTypeID<GltfComponent>();
+        gfxExit();
+        romfsExit();
+        LoggingExit();
+        LOG_INFO("Engine shutdown complete");
     }
 
-    void draw() override
+    static float CalculateDeltaTime(u64& prevTime)
     {
-        // each frame, just draw all meshes (using whatever shader they baked in)
-        for (auto& mesh : meshes) {
-            mesh->Draw();
-        }
+        const double freq = static_cast<double>(armGetSystemTickFreq());
+        u64 now = armGetSystemTick();
+        float dt = static_cast<float>((now - prevTime) / freq);
+        prevTime = now;
+        return dt;
     }
 };
 
-//------------------------------------------------------------------------------
-// Entry point
-//------------------------------------------------------------------------------
-int main(int, char**)
-{
-    // — logging & on-screen console —
-    initLogging();
-
-    // — mount ROMFS & init GPU —
-    romfsInit();
-    gfxInit();
-
-    // — load GL pointers & enable depth test —
-    if (!gladLoadGL()) {
-        LOG_ERROR("gladLoadGL failed");
+class Game {
+public:
+    Game()
+        : m_input()
+        , m_scene()
+    {
+        SetupScene();
     }
-    glEnable(GL_DEPTH_TEST);
 
-    // — set up input, scene, player+camera —
-    InputSystem input;
-    Scene scene;
+    void Run()
+    {
+        u64 prevTime = armGetSystemTick();
 
-    auto& playerCam = scene.root().createChild("PlayerCamera");
-    playerCam.transform().position = { 0.0f, 0.0f, 3.0f };
-    playerCam.addComponent<Player>(&playerCam, &input);
-    auto& cam = playerCam.addComponent<Camera>(
-        &playerCam,
-        /*fov=*/78.f,
-        /*aspect=*/1280.f / 720.f,
-        /*znear=*/0.1f,
-        /*zfar=*/100.f);
+        while (appletMainLoop()) {
+            const float dt = Engine::CalculateDeltaTime(prevTime);
+            Update(dt);
+            Render();
 
-    // — load & attach the girl model at world-origin —
-    auto& girlObj = scene.root().createChild("Girl");
-    girlObj.transform().position = { 0.0f, 0.0f, 0.0f };
-    girlObj.addComponent<GltfComponent>(&girlObj,
-        "romfs:/GLBs/girl.glb");
+            if (ShouldExit())
+                break;
+        }
+    }
 
-    // — timing setup —
-    const double freq = double(armGetSystemTickFreq());
-    u64 prev = armGetSystemTick();
+private:
+    void SetupScene()
+    {
+        // Setup player camera
+        auto& playerCam = m_scene.root().createChild("PlayerCamera");
+        playerCam.transform().position = { 0.0f, 0.0f, 10.0f }; // Move camera back
+        playerCam.addComponent<Player>(&playerCam, &m_input);
+        m_mainCamera = &playerCam.addComponent<Camera>(
+            &playerCam, 78.0f, 1280.0f / 720.0f, 0.1f, 100.0f);
 
-    // — main loop —
-    while (appletMainLoop()) {
-        // compute delta‐time
-        u64 now = armGetSystemTick();
-        float dt = float((now - prev) / freq);
-        prev = now;
+        // Load first girl model
+        auto& girlObj1 = m_scene.root().createChild("Girl1");
+        girlObj1.transform().position = { -5.0f, 0.0f, 0.0f };
+        girlObj1.addComponent<GltfComponent>(&girlObj1, "romfs:/GLBs/girl.glb");
 
-        // poll input & exit if “+” pressed
-        input.update();
-        if (input.keysDown() & HidNpadButton_Plus)
-            break;
+        // Load second girl model
+        auto& girlObj2 = m_scene.root().createChild("Girl2");
+        girlObj2.transform().position = { 5.0f, 0.0f, 0.0f }; // Move far to the right
+        girlObj2.addComponent<GltfComponent>(&girlObj2, "romfs:/GLBs/girl.glb");
 
-        // update scene graph
-        scene.Update(dt);
+        LOG_INFO("Girl1 created at position: (%f, %f, %f)",
+            girlObj1.transform().position.x,
+            girlObj1.transform().position.y,
+            girlObj1.transform().position.z);
 
-        // push camera matrices
-        updateViewProj(cam.viewMatrix(), cam.projectionMatrix());
+        LOG_INFO("Girl2 created at position: (%f, %f, %f)",
+            girlObj2.transform().position.x,
+            girlObj2.transform().position.y,
+            girlObj2.transform().position.z);
+    }
 
-        // start frame
+    void Update(float dt)
+    {
+        m_input.update();
+        m_scene.Update(dt);
+        updateViewProj(m_mainCamera->viewMatrix(),
+            m_mainCamera->projectionMatrix());
+    }
+
+    void Render()
+    {
         gfxBegin();
+        {
+            glClearColor(0.0f, 0.2f, 0.6f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, 1280, 720);
 
-        // clear to a nice sky‐blue
-        glClearColor(0.0f, 0.2f, 0.6f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, 1280, 720);
-
-        // draw everything
-        scene.Render();
-
-        // finish frame
+            m_scene.Render();
+        }
         gfxEnd();
     }
 
-    // — tear everything down —
-    gfxExit();
-    romfsExit();
-    LoggingExit();
+    bool ShouldExit() const
+    {
+        return m_input.keysDown() & HidNpadButton_Plus;
+    }
 
+    InputSystem m_input;
+    Scene m_scene;
+    Camera* m_mainCamera = nullptr;
+};
+
+int main(int argc, char** argv)
+{
+    Engine::Init();
+
+    Game game;
+    game.Run();
+
+    Engine::Shutdown();
     return 0;
 }

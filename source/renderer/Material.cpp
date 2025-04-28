@@ -1,6 +1,7 @@
 #include "Material.hpp"
 #include "../graphics/GLUtils.hpp" // for GLUtils::checkError
 #include <glad/glad.h> // for glGetUniformLocation, glUniform*
+#include <glm/gtc/type_ptr.hpp>
 
 void Material::SetBaseColorFactor(const glm::vec4& c) { m_baseColorFactor = c; }
 void Material::SetMetallicFactor(float m) { m_metallicFactor = m; }
@@ -12,33 +13,44 @@ void Material::SetNormalTexture(std::shared_ptr<Texture> t) { m_normalTexture = 
 
 void Material::Bind(GLuint program) const
 {
-    // Upload PBR factors
+    // Upload base color, metallic, roughness factors
     GLint locBase = glGetUniformLocation(program, "u_BaseColorFactor");
+    if (locBase != -1)
+        glUniform4fv(locBase, 1, glm::value_ptr(m_baseColorFactor));
+
     GLint locMetal = glGetUniformLocation(program, "u_Metallic");
+    if (locMetal != -1)
+        glUniform1f(locMetal, m_metallicFactor);
+
     GLint locRough = glGetUniformLocation(program, "u_Roughness");
+    if (locRough != -1)
+        glUniform1f(locRough, m_roughnessFactor);
 
-    glUniform4fv(locBase, 1, &m_baseColorFactor[0]);
-    glUniform1f(locMetal, m_metallicFactor);
-    glUniform1f(locRough, m_roughnessFactor);
-
-    // Bind textures if present
+    // Bind base color texture
     if (m_baseColorTexture) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_baseColorTexture->GetID());
-        GLint loc = glGetUniformLocation(program, "u_AlbedoMap");
-        glUniform1i(loc, 0);
+        GLint locAlbedo = glGetUniformLocation(program, "u_AlbedoMap");
+        if (locAlbedo != -1)
+            glUniform1i(locAlbedo, 0);
     }
+
+    // Bind metallic-roughness texture
     if (m_metallicRoughnessTexture) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, m_metallicRoughnessTexture->GetID());
-        GLint loc = glGetUniformLocation(program, "u_MetallicRoughnessMap");
-        glUniform1i(loc, 1);
+        GLint locMR = glGetUniformLocation(program, "u_MetallicRoughnessMap");
+        if (locMR != -1)
+            glUniform1i(locMR, 1);
     }
+
+    // Bind normal map texture
     if (m_normalTexture) {
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, m_normalTexture->GetID());
-        GLint loc = glGetUniformLocation(program, "u_NormalMap");
-        glUniform1i(loc, 2);
+        GLint locNormal = glGetUniformLocation(program, "u_NormalMap");
+        if (locNormal != -1)
+            glUniform1i(locNormal, 2);
     }
 
     GLUtils::checkError("Material::Bind");
