@@ -1,11 +1,12 @@
 #include "GltfLoader.hpp"
-#include "../core/Logging.hpp"
+#include "core/Logging.hpp"
+#include "renderer/SkinnedMesh.hpp"
 #include "tiny_gltf.h"
 #include <glad/glad.h>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace Asset {
 
-// Static storage
 std::vector<std::shared_ptr<Texture>> GltfLoader::s_textures;
 std::vector<std::shared_ptr<Material>> GltfLoader::s_materials;
 
@@ -37,13 +38,13 @@ std::vector<std::shared_ptr<Mesh>> GltfLoader::LoadFromFile(const std::string& f
 
     std::vector<std::shared_ptr<Mesh>> meshes;
     LoadMeshes(model, meshes);
+    LoadSkins(model, meshes);
 
     return meshes;
 }
 
 void GltfLoader::LoadBuffers(const tinygltf::Model& model)
 {
-    // Upload bufferViews to OpenGL
     for (const auto& bufView : model.bufferViews) {
         GLuint bufferId;
         glGenBuffers(1, &bufferId);
@@ -91,7 +92,14 @@ void GltfLoader::LoadMeshes(const tinygltf::Model& model, std::vector<std::share
 {
     for (const auto& mesh : model.meshes) {
         for (const auto& prim : mesh.primitives) {
-            auto meshPtr = std::make_shared<Mesh>();
+            bool isSkinned = prim.attributes.count("JOINTS_0") && prim.attributes.count("WEIGHTS_0");
+
+            std::shared_ptr<Mesh> meshPtr;
+            if (isSkinned) {
+                meshPtr = std::make_shared<SkinnedMesh>();
+            } else {
+                meshPtr = std::make_shared<Mesh>();
+            }
 
             if (prim.attributes.count("POSITION")) {
                 const auto& acc = model.accessors[prim.attributes.at("POSITION")];
@@ -117,6 +125,26 @@ void GltfLoader::LoadMeshes(const tinygltf::Model& model, std::vector<std::share
                 meshPtr->SetVertexTexCoords(ptr, acc.count);
             }
 
+            if (isSkinned) {
+                auto skinned = std::static_pointer_cast<SkinnedMesh>(meshPtr);
+
+                if (prim.attributes.count("JOINTS_0")) {
+                    const auto& acc = model.accessors[prim.attributes.at("JOINTS_0")];
+                    const auto& view = model.bufferViews[acc.bufferView];
+                    const auto& buffer = model.buffers[view.buffer];
+                    const uint16_t* ptr = reinterpret_cast<const uint16_t*>(buffer.data.data() + view.byteOffset + acc.byteOffset);
+                    skinned->SetVertexJointIndices(ptr, acc.count);
+                }
+
+                if (prim.attributes.count("WEIGHTS_0")) {
+                    const auto& acc = model.accessors[prim.attributes.at("WEIGHTS_0")];
+                    const auto& view = model.bufferViews[acc.bufferView];
+                    const auto& buffer = model.buffers[view.buffer];
+                    const float* ptr = reinterpret_cast<const float*>(buffer.data.data() + view.byteOffset + acc.byteOffset);
+                    skinned->SetVertexWeights(ptr, acc.count);
+                }
+            }
+
             if (prim.indices >= 0) {
                 const auto& acc = model.accessors[prim.indices];
                 const auto& view = model.bufferViews[acc.bufferView];
@@ -132,6 +160,37 @@ void GltfLoader::LoadMeshes(const tinygltf::Model& model, std::vector<std::share
             outMeshes.push_back(meshPtr);
         }
     }
+}
+
+void GltfLoader::LoadSkins(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& meshes)
+{
+    for (const auto& skin : model.skins) {
+        if (skin.inverseBindMatrices < 0)
+            continue;
+
+        const auto& accessor = model.accessors[skin.inverseBindMatrices];
+        const auto& bufferView = model.bufferViews[accessor.bufferView];
+        const auto& buffer = model.buffers[bufferView.buffer];
+        const float* ibmData = reinterpret_cast<const float*>(
+            buffer.data.data() + bufferView.byteOffset + accessor.byteOffset);
+
+        for (size_t i = 0; i < accessor.count; ++i) {
+            glm::mat4 bindMatrix = glm::make_mat4(ibmData + i * 16);
+
+            if (i < meshes.size()) {
+                auto skinnedMesh = std::static_pointer_cast<SkinnedMesh>(meshes[i]);
+                if (skinnedMesh) {
+                    skinnedMesh->AddInverseBindMatrix(bindMatrix);
+                }
+            }
+        }
+    }
+}
+
+std::vector<std::shared_ptr<AnimationClip>> GltfLoader::LoadAnimations(const std::string& filepath)
+{
+    LOG_WARN("LoadAnimations is not implemented yet for: %s", filepath.c_str());
+    return {};
 }
 
 } // namespace Asset

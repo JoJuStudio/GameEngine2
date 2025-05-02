@@ -10,7 +10,8 @@
 class Mesh {
 public:
     Mesh();
-    ~Mesh();
+
+    virtual ~Mesh() = default;
 
     /// Upload interleaved position data (x,y,z) for \p count vertices.
     void SetVertexPositions(const float* positions, std::size_t count);
@@ -28,13 +29,13 @@ public:
     std::size_t IndexCount() const { return m_indexCount; }
 
     /// Bind VAO and draw elements.
-    void Draw(GLuint shaderProgram) const;
+    virtual void Draw(GLuint shaderProgram) const;
 
     /// Optional: assign a material to this mesh
     void SetMaterial(std::shared_ptr<Material> mat) { m_material = mat; }
-    std::shared_ptr<Material> GetMaterial() const { return m_material; } // <-- NEW ADD THIS!!
+    std::shared_ptr<Material> GetMaterial() const { return m_material; }
 
-private:
+protected:
     unsigned int m_vao = 0;
     unsigned int m_vboPositions = 0;
     unsigned int m_vboNormals = 0;

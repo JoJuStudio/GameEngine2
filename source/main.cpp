@@ -20,6 +20,7 @@
 // Engine components
 //======================================
 #include "Player.hpp"
+#include "components/AnimationComponent.hpp"
 #include "components/GltfComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/Component.hpp"
@@ -94,30 +95,32 @@ private:
     {
         // Setup player camera
         auto& playerCam = m_scene.root().createChild("PlayerCamera");
-        playerCam.transform().position = { 0.0f, 0.0f, 10.0f }; // Move camera back
+        playerCam.transform().position = { 0.0f, 0.0f, 20.0f }; // Move camera back appropriately
         playerCam.addComponent<Player>(&playerCam, &m_input);
         m_mainCamera = &playerCam.addComponent<Camera>(
-            &playerCam, 78.0f, 1280.0f / 720.0f, 0.1f, 100.0f);
+            &playerCam, 78.0f, 1280.0f / 720.0f, 0.1f, 100.0f); // Adjust far plane as needed
 
-        // Load first girl model
-        auto& girlObj1 = m_scene.root().createChild("Girl1");
-        girlObj1.transform().position = { -5.0f, 0.0f, 0.0f };
-        girlObj1.addComponent<GltfComponent>(&girlObj1, "romfs:/GLBs/girl.glb");
+        auto animationClips = Asset::GltfLoader::LoadAnimations("romfs:/GLBs/girl.glb");
 
-        // Load second girl model
-        auto& girlObj2 = m_scene.root().createChild("Girl2");
-        girlObj2.transform().position = { 5.0f, 0.0f, 0.0f }; // Move far to the right
-        girlObj2.addComponent<GltfComponent>(&girlObj2, "romfs:/GLBs/girl.glb");
+        std::shared_ptr<AnimationClip> walkingClip = nullptr;
+        for (auto& clip : animationClips) {
+            if (clip->GetName() == "walking") {
+                walkingClip = clip;
+                break;
+            }
+        }
 
-        LOG_INFO("Girl1 created at position: (%f, %f, %f)",
-            girlObj1.transform().position.x,
-            girlObj1.transform().position.y,
-            girlObj1.transform().position.z);
+        for (int i = 0; i < 5; ++i) {
+            for (int j = 0; j < 5; ++j) {
+                auto& girlObj = m_scene.root().createChild("Girl" + std::to_string(i * 5 + j));
+                girlObj.transform().position = { float(i) * 1.0f, 0.0f, float(j) * 3.0f };
+                girlObj.addComponent<GltfComponent>(&girlObj, "romfs:/GLBs/girl.glb");
 
-        LOG_INFO("Girl2 created at position: (%f, %f, %f)",
-            girlObj2.transform().position.x,
-            girlObj2.transform().position.y,
-            girlObj2.transform().position.z);
+                if (walkingClip) {
+                    girlObj.addComponent<AnimationComponent>(&girlObj, walkingClip);
+                }
+            }
+        }
     }
 
     void Update(float dt)

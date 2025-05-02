@@ -12,15 +12,6 @@ Mesh::Mesh()
     glGenBuffers(1, &m_ebo);
 }
 
-Mesh::~Mesh()
-{
-    glDeleteBuffers(1, &m_vboPositions);
-    glDeleteBuffers(1, &m_vboNormals);
-    glDeleteBuffers(1, &m_vboTexCoords); // <-- delete UV buffer
-    glDeleteBuffers(1, &m_ebo);
-    glDeleteVertexArrays(1, &m_vao);
-}
-
 void Mesh::SetVertexPositions(const float* positions, std::size_t count)
 {
     m_vertexCount = count;
