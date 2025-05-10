@@ -6,12 +6,20 @@
 #include <cstddef>
 #include <memory>
 
+/// Enum for identifying mesh types without RTTI
+enum class MeshType {
+    Static,
+    Skinned
+};
+
 /// Simple wrapper around a VAO/VBO/EBO for a single mesh.
 class Mesh {
 public:
     Mesh();
 
     virtual ~Mesh() = default;
+
+    virtual MeshType GetType() const { return MeshType::Static; } // <-- Add this
 
     /// Upload interleaved position data (x,y,z) for \p count vertices.
     void SetVertexPositions(const float* positions, std::size_t count);
@@ -45,4 +53,6 @@ protected:
     std::size_t m_indexCount = 0;
 
     std::shared_ptr<Material> m_material;
+
+    GLuint GetVAO() const { return m_vao; }
 };

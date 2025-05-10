@@ -1,8 +1,11 @@
 // source/components/AnimationComponent.cpp
 
 #include "components/AnimationComponent.hpp"
+#include "components/AnimationClip.hpp"
+#include "components/GltfComponent.hpp"
 #include "core/GameObject.hpp"
-#include "core/Transform.hpp"
+#include "renderer/Mesh.hpp"
+#include "renderer/SkinnedMesh.hpp"
 
 AnimationComponent::AnimationComponent(GameObject* owner, std::shared_ptr<AnimationClip> clip)
     : Component(owner)
@@ -16,11 +19,19 @@ void AnimationComponent::update(float deltaTime)
         return;
 
     m_currentTime += deltaTime;
-    m_clip->ApplyTo(owner()->transform(), m_currentTime);
 
-    const auto& pos = owner()->transform().position;
-    const auto& scl = owner()->transform().scale;
-    printf("Pos: %.2f %.2f %.2f | Scale: %.2f %.2f %.2f\n", pos.x, pos.y, pos.z, scl.x, scl.y, scl.z);
+    auto* gltf = owner()->getComponent<GltfComponent>();
+    if (!gltf)
+        return;
+
+    const auto& meshes = gltf->getMeshes();
+    for (const auto& mesh : meshes) {
+        if (mesh->GetType() == MeshType::Skinned) {
+            auto* skinned = static_cast<SkinnedMesh*>(mesh.get());
+            skinned->ApplyAnimation(*m_clip, m_currentTime);
+            skinned->UpdateBoneTransforms();
+        }
+    }
 }
 
 ComponentTypeID AnimationComponent::type() const

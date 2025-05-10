@@ -19,7 +19,6 @@
 //======================================
 // Engine components
 //======================================
-#include "Player.hpp"
 #include "components/AnimationComponent.hpp"
 #include "components/GltfComponent.hpp"
 #include "core/Camera.hpp"
@@ -31,6 +30,11 @@
 #include "graphics/Renderer.hpp"
 #include "input/InputSystem.hpp"
 #include "renderer/Mesh.hpp"
+
+//======================================
+// Test Stuff
+//======================================
+#include "Player.hpp"
 
 class Engine {
 public:
@@ -78,12 +82,25 @@ public:
 
     void Run()
     {
+        const float targetFrameTime = 1.0f / 60.0f; // 60 FPS target
         u64 prevTime = armGetSystemTick();
 
         while (appletMainLoop()) {
-            const float dt = Engine::CalculateDeltaTime(prevTime);
+            const u64 frameStart = armGetSystemTick();
+
+            float dt = Engine::CalculateDeltaTime(prevTime);
             Update(dt);
             Render();
+
+            // Frame limiting logic
+            const double freq = static_cast<double>(armGetSystemTickFreq());
+            u64 frameEnd = armGetSystemTick();
+            float elapsed = static_cast<float>((frameEnd - frameStart) / freq);
+
+            // Delay if frame completed too quickly
+            if (elapsed < targetFrameTime) {
+                svcSleepThread(static_cast<s64>((targetFrameTime - elapsed) * 1'000'000'000.0));
+            }
 
             if (ShouldExit())
                 break;

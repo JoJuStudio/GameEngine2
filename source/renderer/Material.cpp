@@ -1,3 +1,4 @@
+// source/renderer/Material.cpp
 #include "Material.hpp"
 #include "../graphics/GLUtils.hpp" // for GLUtils::checkError
 #include <glad/glad.h> // for glGetUniformLocation, glUniform*

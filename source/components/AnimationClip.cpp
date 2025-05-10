@@ -1,40 +1,14 @@
+// source/components/AnimationClip.cpp
+
 #include "AnimationClip.hpp"
-#include "../core/Transform.hpp"
+#include <glm/gtx/quaternion.hpp> // <-- contains toMat4()
 
-void AnimationClip::ApplyTo(Transform& transform, float currentTime) const
+void AnimationClip::AddKeyframe(const std::string& boneName, const Keyframe& keyframe)
 {
-    if (m_keyframes.empty())
-        return;
+    m_tracks[boneName].push_back(keyframe);
+}
 
-    const Keyframe* prev = nullptr;
-    const Keyframe* next = nullptr;
-
-    for (const auto& key : m_keyframes) {
-        if (key.time >= currentTime) {
-            next = &key;
-            break;
-        }
-        prev = &key;
-    }
-
-    if (!prev)
-        prev = next;
-    if (!next)
-        next = prev;
-
-    if (!prev || !next)
-        return;
-
-    if (prev == next) {
-        transform.position = prev->position;
-        transform.rotation = prev->rotation;
-        transform.scale = prev->scale;
-        return;
-    }
-
-    float t = (currentTime - prev->time) / (next->time - prev->time);
-
-    transform.position = glm::mix(prev->position, next->position, t);
-    transform.rotation = glm::slerp(prev->rotation, next->rotation, t);
-    transform.scale = glm::mix(prev->scale, next->scale, t);
+const std::unordered_map<std::string, std::vector<AnimationClip::Keyframe>>& AnimationClip::GetTracks() const
+{
+    return m_tracks;
 }

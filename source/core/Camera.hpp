@@ -1,3 +1,4 @@
+// source/core/Camera.hpp
 #pragma once
 #include "Component.hpp"
 #include <glm/glm.hpp>

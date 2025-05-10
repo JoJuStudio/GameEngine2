@@ -14,6 +14,8 @@ public:
     GltfComponent(GameObject* owner, const std::string& path);
 
     ComponentTypeID type() const override;
+    const std::vector<std::shared_ptr<Mesh>>& getMeshes() const { return meshes; }
+
     void draw() override;
 
 private:

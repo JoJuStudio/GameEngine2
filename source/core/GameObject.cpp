@@ -1,3 +1,4 @@
+// source/core/GameObject.cpp
 #include "GameObject.hpp"
 #include "Transform.hpp"
 

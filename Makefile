@@ -37,6 +37,8 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
+IP 		?= 	192.168.178.77
+#---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES 	:=	source source/core source/input source/graphics source/asset source/renderer/ source/components
@@ -222,3 +224,7 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
+
+send: $(TARGET).nro
+	@echo "Sending $(TARGET).nro to Switch at $(IP)..."
+	nxlink -s -a $(IP) $(TARGET).nro

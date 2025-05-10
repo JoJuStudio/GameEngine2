@@ -1,3 +1,5 @@
+// source/core/Logging.hpp
+
 #pragma once
 #include <cstdio>
 #include <switch.h>
