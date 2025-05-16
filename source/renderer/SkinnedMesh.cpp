@@ -80,11 +80,14 @@ void SkinnedMesh::SetVertexWeights(const float* weights, std::size_t count)
 }
 
 void SkinnedMesh::InitBuffers(
+
     GLuint positionVBO, GLuint normalVBO, GLuint texCoordVBO,
     const uint16_t* joints, const float* weights,
     const uint16_t* indices, std::size_t indexCount,
     std::size_t vertexCount)
 {
+    LOG_INFO("SkinnedMesh::InitBuffers - VAO created: %u", m_vao);
+
     m_indexCount = indexCount;
 
     glGenVertexArrays(1, &m_vao);
@@ -122,18 +125,39 @@ void SkinnedMesh::InitBuffers(
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(uint16_t), indices, GL_STATIC_DRAW);
 
     glBindVertexArray(0);
+
+    int maxBoneIndex = static_cast<int>(m_bones.size()) - 1;
+
+    for (size_t i = 0; i < vertexCount; ++i) {
+        const uint16_t* j = &joints[i * 4];
+        const float* w = &weights[i * 4];
+        float total = w[0] + w[1] + w[2] + w[3];
+
+        if (total < 0.001f) {
+            LOG_WARN("Bad weights at vertex %zu: [%.2f %.2f %.2f %.2f] (sum=%.2f)", i, w[0], w[1], w[2], w[3], total);
+        }
+
+        if (j[0] > maxBoneIndex || j[1] > maxBoneIndex || j[2] > maxBoneIndex || j[3] > maxBoneIndex) {
+            LOG_WARN("Out-of-range joint index at vertex %zu: [%u %u %u %u] (max allowed: %d)",
+                     i, j[0], j[1], j[2], j[3], maxBoneIndex);
+        }
+    }
+
 }
 
 void SkinnedMesh::Draw(GLuint shaderProgram) const
 {
-    LOG_INFO("SkinnedMesh::Draw - Using shader program: %u", shaderProgram);
+    static bool drewOnce = false;
+    if (!drewOnce) {
+        LOG_INFO("SkinnedMesh::Draw() called");
+        drewOnce = true;
+    }
 
     // Upload bone matrices
     GLint bonesLoc = glGetUniformLocation(shaderProgram, "uBones");
     if (bonesLoc != -1) {
         glUniformMatrix4fv(bonesLoc, static_cast<GLsizei>(m_finalBoneMatrices.size()),
             GL_FALSE, glm::value_ptr(m_finalBoneMatrices[0]));
-        LOG_INFO("Uploaded %zu bone matrices to uBones", m_finalBoneMatrices.size());
     } else {
         LOG_WARN("Uniform 'uBones' not found in shader");
     }
@@ -141,7 +165,6 @@ void SkinnedMesh::Draw(GLuint shaderProgram) const
     // Bind material
     if (m_material) {
         if (m_material->GetBaseColorTexture()) {
-            LOG_INFO("Binding material base color texture");
             m_material->Bind(shaderProgram);
         } else {
             LOG_WARN("Material has no base color texture");
@@ -152,13 +175,10 @@ void SkinnedMesh::Draw(GLuint shaderProgram) const
 
     // Bind and draw
     glBindVertexArray(m_vao);
-    LOG_INFO("Bound VAO: %u", m_vao);
 
     if (IndexCount() > 0) {
-        LOG_INFO("Drawing elements: count=%zu", IndexCount());
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(IndexCount()), GL_UNSIGNED_SHORT, nullptr);
     } else if (VertexCount() > 0) {
-        LOG_INFO("Drawing arrays: count=%zu", VertexCount());
         glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(VertexCount()));
     } else {
         LOG_WARN("No index or vertex count to draw");

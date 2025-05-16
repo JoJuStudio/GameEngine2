@@ -41,6 +41,7 @@ public:
     static void Init()
     {
         initLogging();
+        Logger::DisableFileLogging();
         romfsInit();
         gfxInit();
 
@@ -57,8 +58,9 @@ public:
     {
         gfxExit();
         romfsExit();
-        LoggingExit();
         LOG_INFO("Engine shutdown complete");
+        LoggingExit();
+
     }
 
     static float CalculateDeltaTime(u64& prevTime)
@@ -82,8 +84,10 @@ public:
 
     void Run()
     {
-        const float targetFrameTime = 1.0f / 60.0f; // 60 FPS target
+        const float targetFrameTime = 1.0f / 24.0f; // 24 FPS target
         u64 prevTime = armGetSystemTick();
+
+        // gfxSetVsyncMode(false);
 
         while (appletMainLoop()) {
             const u64 frameStart = armGetSystemTick();

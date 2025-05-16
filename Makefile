@@ -37,8 +37,6 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
-IP 		?= 	192.168.178.77
-#---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES 	:=	source source/core source/input source/graphics source/asset source/renderer/ source/components
@@ -56,8 +54,7 @@ CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -Iexternal
-
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
@@ -226,5 +223,26 @@ endif
 #---------------------------------------------------------------------------------------
 
 send: $(TARGET).nro
+	@if [ -z "$(IP)" ]; then \
+		echo "   Error: No IP address set."; \
+		echo "   Please run with: IP=your.switch.ip.make send"; \
+		echo "   Or export IP beforehand."; \
+		exit 1; \
+	fi
 	@echo "Sending $(TARGET).nro to Switch at $(IP)..."
 	nxlink -s -a $(IP) $(TARGET).nro
+
+
+
+.PHONY: setup
+
+setup:
+	@echo "Installing all devkitPro switch libraries..."
+	@sudo pacman -Syu --noconfirm
+	@sudo pacman -Sl dkp-libs | grep '^dkp-libs switch-' | awk '{print $$2}' | xargs sudo pacman -S --noconfirm
+	@git submodule update --init --recursive
+	@if [ ! -f .env ]; then \
+		read -p "Enter your Switch IP address: " ip; \
+		echo "IP=$$ip" > .env; \
+		echo "✔ Saved IP to .env. Use 'export \$$(cat .env | xargs)' to load it."; \
+	fi

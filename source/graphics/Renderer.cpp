@@ -8,7 +8,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <switch.h>
+
 
 // -- EGL/GL state --
 static EGLDisplay s_display = EGL_NO_DISPLAY;
@@ -65,6 +65,16 @@ void gfxInit()
     s_projLoc = glGetUniformLocation(s_prog, "uProj");
     s_modelLoc = glGetUniformLocation(s_prog, "uModel");
     s_textureLoc = glGetUniformLocation(s_prog, "uTexture");
+}
+
+void gfxSetVsyncMode(bool enable)
+{
+    // Switch-specific vsync control
+    NWindow* win = nwindowGetDefault();
+    nwindowSetSwapInterval(win, enable ? 1 : 0);
+
+    // EGL-level vsync control
+    eglSwapInterval(s_display, enable ? 1 : 0);
 }
 
 void updateViewProj(const glm::mat4& view, const glm::mat4& proj)

@@ -26,7 +26,6 @@ private:
     static void LoadMaterials(const tinygltf::Model& model);
     static void LoadMeshes(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& outMeshes);
 
-    // ✅ ADD THIS:
     static void LoadSkins(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& outMeshes);
 
     static std::vector<std::shared_ptr<Texture>> s_textures;
