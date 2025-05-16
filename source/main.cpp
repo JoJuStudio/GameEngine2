@@ -1,187 +1,111 @@
-// source/main.cpp
-
-//======================================
-// Core systems
-//======================================
 #include <memory>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <cstdlib>
 
-//======================================
-// Graphics APIs
-//======================================
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <switch.h>
 
-//======================================
-// Engine components
-//======================================
 #include "components/AnimationComponent.hpp"
 #include "components/GltfComponent.hpp"
 #include "core/Camera.hpp"
-#include "core/Component.hpp"
+#include "core/Transform.hpp"
 #include "core/GameObject.hpp"
 #include "core/Logging.hpp"
 #include "core/Scene.hpp"
-#include "core/Transform.hpp"
 #include "graphics/Renderer.hpp"
 #include "input/InputSystem.hpp"
 #include "renderer/Mesh.hpp"
-
-//======================================
-// Test Stuff
-//======================================
 #include "Player.hpp"
 
-class Engine {
-public:
-    static void Init()
-    {
-        initLogging();
-        Logger::DisableFileLogging();
-        romfsInit();
-        gfxInit();
+static u64 previousTick;
+static Camera* mainCamera = nullptr;
+static Scene scene;
+static InputSystem inputSystem;
 
-        if (!gladLoadGL()) {
-            LOG_ERROR("Failed to initialize GLAD");
-            return;
-        }
+void initEngine() {
+    initLogging();
+    Logger::DisableFileLogging();
+    romfsInit();
+    gfxInit();
 
-        glEnable(GL_DEPTH_TEST);
-        LOG_INFO("Engine initialized successfully");
+    if (!gladLoadGL()) {
+        LOG_ERROR("Failed to initialize GLAD");
+        exit(EXIT_FAILURE);
     }
 
-    static void Shutdown()
-    {
-        gfxExit();
-        romfsExit();
-        LOG_INFO("Engine shutdown complete");
-        LoggingExit();
+    glEnable(GL_DEPTH_TEST);
+    previousTick = armGetSystemTick();
+    LOG_INFO("Engine initialized");
+}
 
+void shutdownEngine() {
+    gfxExit();
+    romfsExit();
+    LoggingExit();
+    LOG_INFO("Engine shutdown");
+}
+
+float calculateDeltaTime() {
+    double freq = static_cast<double>(armGetSystemTickFreq());
+    u64 currentTick = armGetSystemTick();
+    float dt = static_cast<float>((currentTick - previousTick) / freq);
+    previousTick = currentTick;
+    return dt;
+}
+
+void buildScene() {
+    auto& root = scene.root();
+    auto& playerCam = root.createChild("PlayerCamera");
+    playerCam.transform().position = {0.0f, 0.0f, 20.0f};
+
+    playerCam.addComponent<Player>(&playerCam, &inputSystem);
+    mainCamera = &playerCam.addComponent<Camera>(&playerCam, 78.0f, 1280.0f/720.0f, 0.1f, 100.0f);
+
+    const std::string glbPath = "romfs:/GLBs/girl.glb";
+    auto animations = Asset::GltfLoader::LoadAnimations(glbPath);
+    auto walkingClip = std::find_if(animations.begin(), animations.end(),
+        [](auto& clip){ return clip->GetName() == "walking"; });
+
+    auto& girlObj = root.createChild("Girl0");
+    girlObj.transform().position = {0.0f, 0.0f, 0.0f};
+    girlObj.addComponent<GltfComponent>(&girlObj, glbPath);
+    if (walkingClip != animations.end())
+        girlObj.addComponent<AnimationComponent>(&girlObj, *walkingClip);
+
+    LOG_INFO("Scene built");
+}
+
+void update(float dt) {
+    inputSystem.update();
+    scene.Update(dt);
+    updateViewProj(mainCamera->viewMatrix(), mainCamera->projectionMatrix());
+}
+
+void render() {
+    gfxBegin();
+    glClearColor(0.0f, 0.2f, 0.6f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, 1280, 720);
+    scene.Render();
+    gfxEnd();
+}
+
+int main() {
+    initEngine();
+    buildScene();
+
+    while (appletMainLoop()) {
+        float dt = calculateDeltaTime();
+        update(dt);
+        render();
+        if (inputSystem.keysDown() & HidNpadButton_Plus) break;
     }
 
-    static float CalculateDeltaTime(u64& prevTime)
-    {
-        const double freq = static_cast<double>(armGetSystemTickFreq());
-        u64 now = armGetSystemTick();
-        float dt = static_cast<float>((now - prevTime) / freq);
-        prevTime = now;
-        return dt;
-    }
-};
-
-class Game {
-public:
-    Game()
-        : m_input()
-        , m_scene()
-    {
-        SetupScene();
-    }
-
-    void Run()
-    {
-        const float targetFrameTime = 1.0f / 24.0f; // 24 FPS target
-        u64 prevTime = armGetSystemTick();
-
-        // gfxSetVsyncMode(false);
-
-        while (appletMainLoop()) {
-            const u64 frameStart = armGetSystemTick();
-
-            float dt = Engine::CalculateDeltaTime(prevTime);
-            Update(dt);
-            Render();
-
-            // Frame limiting logic
-            const double freq = static_cast<double>(armGetSystemTickFreq());
-            u64 frameEnd = armGetSystemTick();
-            float elapsed = static_cast<float>((frameEnd - frameStart) / freq);
-
-            // Delay if frame completed too quickly
-            if (elapsed < targetFrameTime) {
-                svcSleepThread(static_cast<s64>((targetFrameTime - elapsed) * 1'000'000'000.0));
-            }
-
-            if (ShouldExit())
-                break;
-        }
-    }
-
-private:
-    void SetupScene()
-    {
-        // Setup player camera
-        auto& playerCam = m_scene.root().createChild("PlayerCamera");
-        playerCam.transform().position = { 0.0f, 0.0f, 20.0f }; // Move camera back appropriately
-        playerCam.addComponent<Player>(&playerCam, &m_input);
-        m_mainCamera = &playerCam.addComponent<Camera>(
-            &playerCam, 78.0f, 1280.0f / 720.0f, 0.1f, 100.0f); // Adjust far plane as needed
-
-        auto animationClips = Asset::GltfLoader::LoadAnimations("romfs:/GLBs/girl.glb");
-
-        std::shared_ptr<AnimationClip> walkingClip = nullptr;
-        for (auto& clip : animationClips) {
-            if (clip->GetName() == "walking") {
-                walkingClip = clip;
-                break;
-            }
-        }
-
-        for (int i = 0; i < 5; ++i) {
-            for (int j = 0; j < 5; ++j) {
-                auto& girlObj = m_scene.root().createChild("Girl" + std::to_string(i * 5 + j));
-                girlObj.transform().position = { float(i) * 1.0f, 0.0f, float(j) * 3.0f };
-                girlObj.addComponent<GltfComponent>(&girlObj, "romfs:/GLBs/girl.glb");
-
-                if (walkingClip) {
-                    girlObj.addComponent<AnimationComponent>(&girlObj, walkingClip);
-                }
-            }
-        }
-    }
-
-    void Update(float dt)
-    {
-        m_input.update();
-        m_scene.Update(dt);
-        updateViewProj(m_mainCamera->viewMatrix(),
-            m_mainCamera->projectionMatrix());
-    }
-
-    void Render()
-    {
-        gfxBegin();
-        {
-            glClearColor(0.0f, 0.2f, 0.6f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glViewport(0, 0, 1280, 720);
-
-            m_scene.Render();
-        }
-        gfxEnd();
-    }
-
-    bool ShouldExit() const
-    {
-        return m_input.keysDown() & HidNpadButton_Plus;
-    }
-
-    InputSystem m_input;
-    Scene m_scene;
-    Camera* m_mainCamera = nullptr;
-};
-
-int main(int argc, char** argv)
-{
-    Engine::Init();
-
-    Game game;
-    game.Run();
-
-    Engine::Shutdown();
-    return 0;
+    shutdownEngine();
+    return EXIT_SUCCESS;
 }

@@ -1,13 +1,19 @@
 #version 300 es
 precision mediump float;
 
-in vec2 vTexCoord;        // Add this varying
+// Mirror the declaration so the linker keeps it
+uniform mat4 uBones[100];
+
+flat in vec3 vNormal;
 out vec4 FragColor;
 
-uniform sampler2D uTexture;  // Add texture uniform
-
 void main() {
-    // Sample texture (fallback to green if no texture)
-    vec4 texColor = texture(uTexture, vTexCoord);
-    FragColor = mix(vec4(0.2, 0.8, 0.4, 1.0), texColor, texColor.a);
+    // dummy read so fragment stage references it too
+    if (uBones[0][0][0] > 1.0e10) {
+        discard;
+    }
+
+    // debug‐normal coloring
+    vec3 c = normalize(vNormal) * 0.5 + 0.5;
+    FragColor = vec4(c, 1.0);
 }

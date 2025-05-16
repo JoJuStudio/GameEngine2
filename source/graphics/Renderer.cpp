@@ -17,14 +17,15 @@ static EGLSurface s_surface = EGL_NO_SURFACE;
 
 // -- GL program & uniform locations --
 static GLuint s_prog = 0;
-static GLint s_viewLoc = -1;
-static GLint s_projLoc = -1;
+static GLint s_viewProjLoc = -1;
 static GLint s_modelLoc = -1;
 static GLint s_textureLoc = -1;
+static GLint s_lightDirLoc = -1;
+static GLint s_lightColorLoc = -1;
+static GLint s_ambientColorLoc = -1;
 
-// -- Stored view/proj matrices --
-static glm::mat4 s_view = glm::mat4(1.0f);
-static glm::mat4 s_proj = glm::mat4(1.0f);
+// -- Stored matrices --
+static glm::mat4 s_viewProj = glm::mat4(1.0f);
 
 void gfxInit()
 {
@@ -61,10 +62,12 @@ void gfxInit()
         "romfs:/Shaders/fragment.glsl");
 
     // Locate uniforms
-    s_viewLoc = glGetUniformLocation(s_prog, "uView");
-    s_projLoc = glGetUniformLocation(s_prog, "uProj");
+    s_viewProjLoc = glGetUniformLocation(s_prog, "uViewProjection");
     s_modelLoc = glGetUniformLocation(s_prog, "uModel");
     s_textureLoc = glGetUniformLocation(s_prog, "uTexture");
+    s_lightDirLoc = glGetUniformLocation(s_prog, "uLightDir");
+    s_lightColorLoc = glGetUniformLocation(s_prog, "uLightColor");
+    s_ambientColorLoc = glGetUniformLocation(s_prog, "uAmbientColor");
 }
 
 void gfxSetVsyncMode(bool enable)
@@ -79,8 +82,7 @@ void gfxSetVsyncMode(bool enable)
 
 void updateViewProj(const glm::mat4& view, const glm::mat4& proj)
 {
-    s_view = view;
-    s_proj = proj;
+    s_viewProj = proj * view;
 }
 
 void setModelMatrix(const glm::mat4& model)
@@ -108,8 +110,22 @@ void gfxBegin()
 
     glUseProgram(s_prog);
 
-    glUniformMatrix4fv(s_viewLoc, 1, GL_FALSE, glm::value_ptr(s_view));
-    glUniformMatrix4fv(s_projLoc, 1, GL_FALSE, glm::value_ptr(s_proj));
+    glUniformMatrix4fv(s_viewProjLoc, 1, GL_FALSE, glm::value_ptr(s_viewProj));
+
+    if (s_lightDirLoc != -1) {
+        static const glm::vec3 defaultLightDir(0.0f, -1.0f, -1.0f);
+        glUniform3fv(s_lightDirLoc, 1, glm::value_ptr(defaultLightDir));
+    }
+    
+    if (s_lightColorLoc != -1) {
+        static const glm::vec3 defaultLightColor(1.0f);
+        glUniform3fv(s_lightColorLoc, 1, glm::value_ptr(defaultLightColor));
+    }
+    
+    if (s_ambientColorLoc != -1) {
+        static const glm::vec3 defaultAmbientColor(0.2f);
+        glUniform3fv(s_ambientColorLoc, 1, glm::value_ptr(defaultAmbientColor));
+    }
 }
 
 void gfxEnd()

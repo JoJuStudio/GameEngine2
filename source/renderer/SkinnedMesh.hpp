@@ -41,8 +41,13 @@ private:
     GLuint m_ebo = 0;
 
     std::size_t m_indexCount = 0;
+    std::size_t m_vertexCount = 0;
 
     std::vector<Bone> m_bones;
     std::vector<glm::mat4> m_inverseBindMatrices;
     std::vector<glm::mat4> m_finalBoneMatrices;
+
+    // Temporary storage for validation
+    std::vector<uint16_t> m_jointIndices;
+    std::vector<float> m_jointWeights;
 };
