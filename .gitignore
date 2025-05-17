@@ -4,6 +4,7 @@
 
 # Build directory created by the stock Makefile
 build/
+.cache/
 
 # Object & dependency files
 *.o
@@ -54,3 +55,4 @@ Thumbs.db
 *.xz
 *.log
 *.txt
+.env
