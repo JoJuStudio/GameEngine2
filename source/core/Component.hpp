@@ -1,4 +1,5 @@
 // source/core/Component.hpp
+
 #pragma once
 #include <cstddef>
 

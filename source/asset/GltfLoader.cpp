@@ -1,4 +1,5 @@
 // source/asset/GltfLoader.cpp
+
 #include "GltfLoader.hpp"
 #include "core/Logging.hpp"
 #include "renderer/SkinnedMesh.hpp"
@@ -6,7 +7,7 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <algorithm>
+
 
 namespace Asset {
 

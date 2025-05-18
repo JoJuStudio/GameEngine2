@@ -1,4 +1,5 @@
 // source/components/AnimationComponent.hpp
+
 #pragma once
 
 #include "components/AnimationClip.hpp"

@@ -1,4 +1,5 @@
 // source/graphics/ShaderLoader.hpp
+
 #pragma once
 
 #include <glad/glad.h>

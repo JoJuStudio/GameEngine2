@@ -47,7 +47,6 @@ private:
     std::vector<glm::mat4> m_inverseBindMatrices;
     std::vector<glm::mat4> m_finalBoneMatrices;
 
-    // Temporary storage for validation
     std::vector<uint16_t> m_jointIndices;
     std::vector<float> m_jointWeights;
 };

@@ -11,9 +11,9 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <memory> // For shared_ptr
-#include <unordered_map> // For caching
-#include <vector> // For std::vector
+#include <memory>
+#include <unordered_map>
+
 
 // Static cache for loaded GLTF meshes
 static std::unordered_map<std::string, std::vector<std::shared_ptr<Mesh>>> s_loadedMeshes;

@@ -1,4 +1,5 @@
 // source/renderer/SkinnedMesh.cpp
+
 #include "renderer/SkinnedMesh.hpp"
 #include "core/Logging.hpp"
 
@@ -94,43 +95,41 @@ void SkinnedMesh::UpdateBoneTransforms()
     for (size_t i = 0; i < m_bones.size(); ++i) {
         const auto& bone = m_bones[i];
 
-        // Validate inverse bind matrix
+        // Use either stored inverse bind or per-bone matrix
         if (i < m_inverseBindMatrices.size()) {
-            m_finalBoneMatrices[i] = m_bones[i].globalTransform * m_inverseBindMatrices[i];
+            m_finalBoneMatrices[i] = bone.globalTransform * m_inverseBindMatrices[i];
         } else {
-            m_finalBoneMatrices[i] = m_bones[i].globalTransform * bone.inverseBindMatrix;
+            m_finalBoneMatrices[i] = bone.globalTransform * bone.inverseBindMatrix;
         }
 
-        // Check for invalid transforms
+        // Check for NaN or Inf and reset if invalid
         const float* mat = glm::value_ptr(m_finalBoneMatrices[i]);
-        bool hasNaN = false;
-        bool hasInf = false;
+        bool invalid = false;
         for (int j = 0; j < 16; ++j) {
-            if (std::isnan(mat[j])) hasNaN = true;
-            if (std::isinf(mat[j])) hasInf = true;
+            if (std::isnan(mat[j]) || std::isinf(mat[j])) {
+                invalid = true;
+                break;
+            }
         }
-
-        if (hasNaN || hasInf) {
-            LOG_ERROR("Bone[%zu] has invalid transform (NaN=%d, Inf=%d)", i, hasNaN, hasInf);
-            m_finalBoneMatrices[i] = glm::mat4(1.0f);  // Reset to identity
+        if (invalid) {
+            LOG_ERROR("Bone[%zu] has invalid transform, resetting to identity", i);
+            m_finalBoneMatrices[i] = glm::mat4(1.0f);
         }
     }
 
-    static bool logged = false;
-    if (!logged) {
-        LOG_INFO("Final bone matrices:");
-        for (size_t i = 0; i < std::min<size_t>(3, m_finalBoneMatrices.size()); ++i) {
-            const float* mat = glm::value_ptr(m_finalBoneMatrices[i]);
-            LOG_INFO("Bone[%zu] = [%.2f %.2f %.2f %.2f | %.2f %.2f %.2f %.2f | %.2f %.2f %.2f %.2f | %.2f %.2f %.2f %.2f]",
-                i,
-                mat[0], mat[1], mat[2], mat[3],
-                mat[4], mat[5], mat[6], mat[7],
-                mat[8], mat[9], mat[10], mat[11],
-                mat[12], mat[13], mat[14], mat[15]);
-        }
-        logged = true;
+    // Log all final bone matrices
+    LOG_INFO("Final bone matrices:");
+    for (size_t i = 0; i < m_finalBoneMatrices.size(); ++i) {
+        const float* mat = glm::value_ptr(m_finalBoneMatrices[i]);
+        LOG_INFO("Bone[%zu] = [%.2f %.2f %.2f %.2f | %.2f %.2f %.2f %.2f | %.2f %.2f %.2f %.2f | %.2f %.2f %.2f %.2f]",
+                 i,
+                 mat[0], mat[1], mat[2], mat[3],
+                 mat[4], mat[5], mat[6], mat[7],
+                 mat[8], mat[9], mat[10], mat[11],
+                 mat[12], mat[13], mat[14], mat[15]);
     }
 }
+
 
 void SkinnedMesh::AddInverseBindMatrix(const glm::mat4& mat)
 {

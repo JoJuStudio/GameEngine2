@@ -1,7 +1,7 @@
 // source/components/AnimationClip.cpp
 
 #include "AnimationClip.hpp"
-#include <glm/gtx/quaternion.hpp> // <-- contains toMat4()
+#include <glm/gtx/quaternion.hpp>
 
 void AnimationClip::AddKeyframe(const std::string& boneName, const Keyframe& keyframe)
 {

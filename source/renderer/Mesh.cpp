@@ -1,14 +1,14 @@
 // source/renderer/Mesh.cpp
 
 #include "Mesh.hpp"
-#include "../graphics/GLUtils.hpp" // pulls in <glad/glad.h> or equivalent
+#include "../graphics/GLUtils.hpp"
 
 Mesh::Mesh()
 {
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vboPositions);
     glGenBuffers(1, &m_vboNormals);
-    glGenBuffers(1, &m_vboTexCoords); // <-- added UV buffer
+    glGenBuffers(1, &m_vboTexCoords);
     glGenBuffers(1, &m_ebo);
 }
 
@@ -61,8 +61,6 @@ void Mesh::SetIndices(const void* indices, std::size_t count, int componentType)
 void Mesh::Draw(GLuint shaderProgram) const
 {
     glBindVertexArray(m_vao);
-
-    // Material binding code can use shaderProgram if needed (optional)
 
     if (m_indexCount > 0) {
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indexCount),

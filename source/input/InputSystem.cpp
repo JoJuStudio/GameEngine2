@@ -1,4 +1,5 @@
 // source/input/InputSystem.cpp
+
 #include "InputSystem.hpp"
 
 InputSystem::InputSystem()

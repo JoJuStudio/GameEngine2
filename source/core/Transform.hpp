@@ -1,4 +1,5 @@
 // source/core/Transform.hpp
+
 #pragma once
 #include "Component.hpp"
 #include <glm/glm.hpp>
@@ -26,4 +27,4 @@ public:
         m = glm::scale(m, scale);
         return m;
     }
-}; /* <-- keep this semicolon */
+};

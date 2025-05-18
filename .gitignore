@@ -56,3 +56,4 @@ Thumbs.db
 *.log
 *.txt
 .env
+LSPsettings.json

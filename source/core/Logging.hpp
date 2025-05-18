@@ -1,5 +1,7 @@
+// source/core/Logging.hpp
+
 #pragma once
-#include <cstdio>
+#include <stdio.h>
 #include <switch.h>
 #include <ctime>
 #include <cstdarg>

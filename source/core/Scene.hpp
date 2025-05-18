@@ -1,4 +1,5 @@
 // source/core/Scene.hpp
+
 #pragma once
 #include <memory>
 

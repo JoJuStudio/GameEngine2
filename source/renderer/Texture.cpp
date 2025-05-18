@@ -1,8 +1,7 @@
 // source/renderer/Texture.cpp
 #include "Texture.hpp"
-// include your GL loader; if you use GLUtils.hpp to pull in GLAD, include that:
-#include "../graphics/GLUtils.hpp"
-// otherwise you can do: #include <glad/glad.h>
+#include "graphics/GLUtils.hpp"
+
 
 Texture::Texture()
 {

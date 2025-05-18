@@ -1,4 +1,7 @@
+// source/core/Logging.cpp
+
 #include "Logging.hpp"
+#include <cstdio>
 
 // Initialize static members
 Logger::Level Logger::m_minLevel = Logger::Level::Info;

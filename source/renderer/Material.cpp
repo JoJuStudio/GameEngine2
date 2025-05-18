@@ -1,7 +1,8 @@
 // source/renderer/Material.cpp
+
 #include "Material.hpp"
-#include "../graphics/GLUtils.hpp" // for GLUtils::checkError
-#include <glad/glad.h> // for glGetUniformLocation, glUniform*
+#include "../graphics/GLUtils.hpp"
+#include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 
 void Material::SetBaseColorFactor(const glm::vec4& c) { m_baseColorFactor = c; }

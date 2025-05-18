@@ -1,4 +1,5 @@
 // source/renderer/Texture.hpp
+
 #pragma once
 
 #include <cstdint>

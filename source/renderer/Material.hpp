@@ -1,12 +1,12 @@
 // source/renderer/Material.hpp
+
 #pragma once
 
 #include "Texture.hpp"
-#include <glad/glad.h> // for GLuint
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <memory>
 
-/// A simple PBR material that binds uniforms and textures into a GL program.
 class Material {
 public:
     Material() = default;

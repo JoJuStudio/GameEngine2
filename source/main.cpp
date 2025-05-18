@@ -1,4 +1,5 @@
-#include <memory>
+// source/main.cpp
+
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -19,7 +20,6 @@
 #include "core/Scene.hpp"
 #include "graphics/Renderer.hpp"
 #include "input/InputSystem.hpp"
-#include "renderer/Mesh.hpp"
 #include "Player.hpp"
 
 static u64 previousTick;
