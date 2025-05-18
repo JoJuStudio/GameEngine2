@@ -3,9 +3,7 @@
 #pragma once
 #include <stdio.h>
 #include <switch.h>
-#include <ctime>
-#include <cstdarg>
-#include <cstring>
+
 
 class Logger {
 public:

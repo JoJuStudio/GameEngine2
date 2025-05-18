@@ -3,11 +3,9 @@
 #include "renderer/SkinnedMesh.hpp"
 #include "core/Logging.hpp"
 
-#include <algorithm>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <string>
 
 SkinnedMesh::SkinnedMesh()
 {

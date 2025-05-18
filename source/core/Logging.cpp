@@ -2,6 +2,8 @@
 
 #include "Logging.hpp"
 #include <cstdio>
+#include <cstdarg>
+#include <switch.h>
 
 // Initialize static members
 Logger::Level Logger::m_minLevel = Logger::Level::Info;
