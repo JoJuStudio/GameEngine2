@@ -7,6 +7,7 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <algorithm>
 
 
 namespace Asset {
@@ -75,34 +76,52 @@ namespace Asset {
             auto material = std::make_shared<Material>();
             auto& pbr = mat.pbrMetallicRoughness;
 
+            // Set base color factor
             if (pbr.baseColorFactor.size() == 4) {
                 material->SetBaseColorFactor({
                     static_cast<float>(pbr.baseColorFactor[0]),
-                                             static_cast<float>(pbr.baseColorFactor[1]),
-                                             static_cast<float>(pbr.baseColorFactor[2]),
-                                             static_cast<float>(pbr.baseColorFactor[3])
+                    static_cast<float>(pbr.baseColorFactor[1]),
+                    static_cast<float>(pbr.baseColorFactor[2]),
+                    static_cast<float>(pbr.baseColorFactor[3])
                 });
             }
 
+            // Handle base color texture
+            if (pbr.baseColorTexture.index >= 0) {  // Fixed syntax here
+                const int texIndex = pbr.baseColorTexture.index;
+
+                // Validate texture index before accessing vector
+                if (texIndex >= 0 && static_cast<size_t>(texIndex) < s_textures.size()) {
+                    material->SetBaseColorTexture(s_textures[texIndex]);
+                } else {
+                    LOG_ERROR("Invalid base color texture index: %d (textures available: %zu)",
+                            texIndex, s_textures.size());
+                }
+            }
+
+            // Set other PBR properties
             material->SetMetallicFactor(static_cast<float>(pbr.metallicFactor));
             material->SetRoughnessFactor(static_cast<float>(pbr.roughnessFactor));
-
-            if (pbr.baseColorTexture.index >= 0) {
-                material->SetBaseColorTexture(s_textures[pbr.baseColorTexture.index]);
-            }
 
             s_materials.push_back(material);
         }
     }
 
     void GltfLoader::LoadMeshes(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& outMeshes) {
-        for (const auto& mesh : model.meshes) {
-            for (const auto& prim : mesh.primitives) {
+        // Process nodes to maintain skin associations
+        for (const auto& node : model.nodes) {
+            if (node.mesh < 0 || static_cast<size_t>(node.mesh) >= model.meshes.size()) continue;
+
+            const auto& gltfMesh = model.meshes[node.mesh];
+
+            for (const auto& prim : gltfMesh.primitives) {
                 const bool isSkinned = prim.attributes.count("JOINTS_0") && prim.attributes.count("WEIGHTS_0");
 
                 std::shared_ptr<Mesh> meshPtr;
                 if (isSkinned) {
                     auto skinned = std::make_shared<SkinnedMesh>();
+                    // Associate with node's skin index (-1 means no skin)
+                    skinned->SetSkinIndex(node.skin);
                     s_skinnedMeshes.push_back(skinned);
                     meshPtr = skinned;
                 } else {
@@ -213,34 +232,71 @@ namespace Asset {
         }
     }
 
-    void GltfLoader::LoadSkins(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& meshes) {
-        for (const auto& skin : model.skins) {
-            if (skin.inverseBindMatrices < 0 || skin.joints.empty()) continue;
 
-            // Load inverse bind matrices
+    void GltfLoader::LoadSkins(const tinygltf::Model& model, std::vector<std::shared_ptr<Mesh>>& meshes) {
+        for (size_t skinIndex = 0; skinIndex < model.skins.size(); ++skinIndex) {
+            const auto& skin = model.skins[skinIndex];
+
+            // Validate inverseBindMatrices index
+            if (skin.inverseBindMatrices < 0 ||
+                static_cast<size_t>(skin.inverseBindMatrices) >= model.accessors.size() ||
+                skin.joints.empty()) {
+                LOG_ERROR("Invalid inverseBindMatrices index or empty joints");
+                continue;
+            }
+
             const auto& accessor = model.accessors[skin.inverseBindMatrices];
+
+            // Validate bufferView index
+            if (accessor.bufferView < 0 ||
+                static_cast<size_t>(accessor.bufferView) >= model.bufferViews.size()) {
+                LOG_ERROR("Invalid bufferView index in inverse bind matrices accessor");
+                continue;
+            }
+
             const auto& bufferView = model.bufferViews[accessor.bufferView];
+
+            // Validate buffer index
+            if (bufferView.buffer < 0 ||
+                static_cast<size_t>(bufferView.buffer) >= model.buffers.size()) {
+                LOG_ERROR("Invalid buffer index in bufferView");
+                continue;
+            }
+
             const auto& buffer = model.buffers[bufferView.buffer];
             const float* ibmData = reinterpret_cast<const float*>(
                 buffer.data.data() + bufferView.byteOffset + accessor.byteOffset);
 
+            // Verify joint count matches inverse bind matrices
+            if (skin.joints.size() != static_cast<size_t>(accessor.count)) {
+                LOG_ERROR("Mismatch: %zu joints vs %d inverse bind matrices",
+                        skin.joints.size(), accessor.count);
+                continue;
+            }
+
             std::vector<Bone> bones;
             bones.reserve(skin.joints.size());
 
-            // Create bones
             for (size_t i = 0; i < skin.joints.size(); ++i) {
                 const int nodeIndex = skin.joints[i];
-                const auto& node = model.nodes[nodeIndex];
 
+                // Validate node index
+                if (nodeIndex < 0 ||
+                    static_cast<size_t>(nodeIndex) >= model.nodes.size()) {
+                    LOG_ERROR("Invalid node index %d in skin joints", nodeIndex);
+                    continue;
+                }
+
+                const auto& node = model.nodes[static_cast<size_t>(nodeIndex)];
                 Bone bone;
                 bone.name = node.name;
-                bone.parentIndex = -1;
+                bone.parentIndex = -1;  // Default to no parent
 
                 // Calculate local transform
                 glm::mat4 translation = glm::mat4(1.0f);
                 if (!node.translation.empty()) {
                     translation = glm::translate(translation,
-                                                 glm::vec3(node.translation[0], node.translation[1], node.translation[2]));
+                        glm::vec3(node.translation[0], node.translation[1], node.translation[2]));
                 }
 
                 glm::mat4 rotation = glm::mat4(1.0f);
@@ -257,7 +313,7 @@ namespace Asset {
                 glm::mat4 scale = glm::mat4(1.0f);
                 if (!node.scale.empty()) {
                     scale = glm::scale(scale,
-                                       glm::vec3(node.scale[0], node.scale[1], node.scale[2]));
+                        glm::vec3(node.scale[0], node.scale[1], node.scale[2]));
                 }
 
                 bone.localTransform = translation * rotation * scale;
@@ -265,26 +321,29 @@ namespace Asset {
                 bones.push_back(bone);
             }
 
-            // Find parent indices by checking children
+            // Find parent indices by checking children (original working method)
             for (size_t i = 0; i < skin.joints.size(); ++i) {
                 const int currentJoint = skin.joints[i];
+                bones[i].parentIndex = -1;
 
                 // Check all nodes in the skin for parent relationship
                 for (size_t j = 0; j < skin.joints.size(); ++j) {
                     const auto& potentialParent = model.nodes[skin.joints[j]];
                     for (int child : potentialParent.children) {
                         if (child == currentJoint) {
-                            bones[i].parentIndex = j;
+                            bones[i].parentIndex = static_cast<int>(j);
                             break;
                         }
                     }
                 }
             }
 
-            // Assign bones to all tracked skinned meshes
+            // Assign bones only to skinned meshes using this skin
             for (auto& skinned : s_skinnedMeshes) {
-                skinned->SetBones(bones);
-                LOG_INFO("Assigned %zu bones to SkinnedMesh", bones.size());
+                if (skinned->GetSkinIndex() == static_cast<int>(skinIndex)) {
+                    skinned->SetBones(bones);
+                    LOG_INFO("Assigned %zu bones to SkinnedMesh", bones.size());
+                }
             }
         }
     }

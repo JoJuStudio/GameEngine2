@@ -1,32 +1,38 @@
-// Vertex Shader
 #version 300 es
-precision mediump float;
+precision highp float;
+precision highp int;
 
-// Attributes
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
-layout(location = 2) in vec2 aTexCoord;
-layout(location = 3) in ivec4 aJoints;
+layout(location = 3) in uvec4 aJoints;
 layout(location = 4) in vec4 aWeights;
 
-// Uniforms
 uniform mat4 uModel;
 uniform mat4 uViewProjection;
-uniform mat4 uBones[100];
+uniform mat4 uBones[100]; // Reduced size for compatibility
 
-// Varyings
 flat out vec3 vNormal;
 
 void main() {
-    // ─── NO-OP uBones usage ───
-    // prevent the driver from optimizing uBones[] away
-    vec4 _dummy = uBones[0] * vec4(0.0);
+    // Blend bone transforms
+    mat4 skinMat =
+        aWeights.x * uBones[aJoints.x] +
+        aWeights.y * uBones[aJoints.y] +
+        aWeights.z * uBones[aJoints.z] +
+        aWeights.w * uBones[aJoints.w];
 
-    // ─── compute face normal ───
-    // handle non-uniform scale via inverse-transpose
-    mat3 normalMatrix = transpose(inverse(mat3(uModel)));
-    vNormal = normalize(normalMatrix * aNormal);
+    // Skinned position in model space
+    vec4 skinnedPos = skinMat * vec4(aPosition, 1.0);
 
-    // ─── position ───
-    gl_Position = uViewProjection * uModel * vec4(aPosition, 1.0);
+    // Correct normal transformation for skinning
+    mat3 skinNormalMatrix = transpose(inverse(mat3(skinMat)));
+    vec3 skinnedNormal = normalize(skinNormalMatrix * aNormal);
+
+    // Apply model and view-projection matrices
+    vec4 worldPos = uModel * skinnedPos;
+    gl_Position = uViewProjection * worldPos;
+
+    // Correct normal transformation for model matrix
+    mat3 modelNormalMatrix = transpose(inverse(mat3(uModel)));
+    vNormal = normalize(modelNormalMatrix * skinnedNormal);
 }

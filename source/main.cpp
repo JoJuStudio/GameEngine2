@@ -67,15 +67,12 @@ void buildScene() {
     mainCamera = &playerCam.addComponent<Camera>(&playerCam, 78.0f, 1280.0f/720.0f, 0.1f, 100.0f);
 
     const std::string glbPath = "romfs:/GLBs/girl.glb";
-    auto animations = Asset::GltfLoader::LoadAnimations(glbPath);
-    auto walkingClip = std::find_if(animations.begin(), animations.end(),
-        [](auto& clip){ return clip->GetName() == "walking"; });
+
 
     auto& girlObj = root.createChild("Girl0");
     girlObj.transform().position = {0.0f, 0.0f, 0.0f};
     girlObj.addComponent<GltfComponent>(&girlObj, glbPath);
-    if (walkingClip != animations.end())
-        girlObj.addComponent<AnimationComponent>(&girlObj, *walkingClip);
+
 
     LOG_INFO("Scene built");
 }

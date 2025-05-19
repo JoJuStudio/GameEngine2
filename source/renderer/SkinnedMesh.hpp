@@ -15,6 +15,10 @@ public:
     SkinnedMesh();
     virtual ~SkinnedMesh();
 
+    // Add these methods for skin association
+    void SetSkinIndex(int index) { m_skinIndex = index; }
+    int GetSkinIndex() const { return m_skinIndex; }
+
     void SetBones(const std::vector<Bone>& bones);
     void UpdateBoneTransforms();
 
@@ -36,6 +40,11 @@ public:
     std::size_t IndexCount() const { return m_indexCount; }
 
 private:
+    GLenum m_indexType = GL_UNSIGNED_SHORT;
+
+    // Add skin index tracking
+    int m_skinIndex = -1;
+
     GLuint m_vboJoints = 0;
     GLuint m_vboWeights = 0;
     GLuint m_ebo = 0;
